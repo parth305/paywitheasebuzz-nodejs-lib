@@ -63,11 +63,53 @@ let initiate_payment = function (data, config, res) {
     } else if (env == 'prod') {
       url_link = 'https://pay.easebuzz.in/';
     } else {
+      // console.log("text pay");
       url_link = "https://testpay.easebuzz.in/";
     }
     return url_link;
   }
 
+ 
+
+  // main calling part is below
+
+  checkArgumentValidation(data, config);
+  var hash_key = generateHash();
+  payment_url = geturl(config.env);
+  call_url = payment_url + 'payment/initiateLink';
+  util.call(call_url, form()).then(function (response) {
+    // pay(hash_key, payment_url)
+    console.log("resss",response);
+    pay(response.data, payment_url)
+  });
+
+
+  function pay(access_key, url_main) {
+    console.log("inpay");
+    if (config.enable_iframe==0) {
+      var url = url_main + 'pay/' + access_key;
+      return res.redirect(url);
+    } else {
+      res.render("enable_iframe.html", {
+        'key': config.key,
+        'access_key': access_key
+      });
+
+    }
+  }
+
+
+  function generateHash() {
+
+    var hashstring = config.key + "|" + data.txnid + "|" + data.amount + "|" + data.productinfo + "|" + data.name + "|" + data.email 
+    +
+      "|" 
+      + data.udf1 + "|" + data.udf2 + "|" + data.udf3 + "|" + data.udf4 + "|" + data.udf5 + "|" + data.udf6 + "|" + data.udf7 + "|" + data.udf8 + "|" + data.udf9 + "|" + data.udf10;
+    hashstring += "|" + config.salt;
+    data.hash = sha512.sha512(hashstring);
+    console.log("hash",hashstring);
+    return (data.hash);
+  }
   function form() {
     form = {
       'key': config.key,
@@ -110,43 +152,6 @@ let initiate_payment = function (data, config, res) {
 
     return form;
   }
-
-  // main calling part is below
-
-  checkArgumentValidation(data, config);
-  var hash_key = generateHash();
-  payment_url = geturl(config.env);
-  call_url = payment_url + 'payment/initiateLink';
-  util.call(call_url, form()).then(function (response) {
-    pay(response.data, payment_url)
-  });
-
-
-  function pay(access_key, url_main) {
-    
-    if (config.enable_iframe==0) {
-      var url = url_main + 'pay/' + access_key;
-      return res.redirect(url);
-    } else {
-
-      res.render("enable_iframe.html", {
-        'key': config.key,
-        'access_key': access_key
-      });
-
-    }
-  }
-
-
-  function generateHash() {
-
-    var hashstring = config.key + "|" + data.txnid + "|" + data.amount + "|" + data.productinfo + "|" + data.name + "|" + data.email +
-      "|" + data.udf1 + "|" + data.udf2 + "|" + data.udf3 + "|" + data.udf4 + "|" + data.udf5 + "|" + data.udf6 + "|" + data.udf7 + "|" + data.udf8 + "|" + data.udf9 + "|" + data.udf10;
-    hashstring += "|" + config.salt;
-    data.hash = sha512.sha512(hashstring);
-    return (data.hash);
-  }
-
 }
 
 exports.initiate_payment = initiate_payment;
